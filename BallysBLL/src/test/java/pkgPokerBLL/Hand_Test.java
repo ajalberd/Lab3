@@ -37,9 +37,35 @@ public class Hand_Test {
 	}
 
 	
-
+	@Test
+	public void AddWilds(){
+		Hand h = new Hand();
+		h.AddCardToHand(new Card(eSuit.JOKER, eRank.JOKER,1));
+		h.AddCardToHand(new Card(eSuit.JOKER, eRank.JOKER,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		assertTrue(h.getHandScore().getHandStrength() == eHandStrength.FullHouse);
+		
+	}
 	
-	
+	@Test
+	public void TestFiveOfAKind(){
+		Hand h = new Hand();
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		h.AddToCardsInHand(new Card(eSuit.CLUBS, eRank.TEN,1));
+		try {
+			h = h.EvaluateHand();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		assertTrue(h.getHandScore().getHandStrength() == eHandStrength.FiveOfAKind);
+		assertTrue(h.getHandScore().getHiHand() == eRank.TEN);
+	}
 	
 	
 	@Test

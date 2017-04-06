@@ -11,7 +11,7 @@ import pkgPokerEnum.eCardNo;
 import pkgPokerEnum.eHandStrength;
 import pkgPokerEnum.eRank;
 import pkgPokerEnum.eSuit;
- 
+import pkgException.exHand;
 
 public class Hand {
 
@@ -40,33 +40,108 @@ public class Hand {
 		CardsInHand.add(c);
 	}
 
-	public Hand EvaluateHand() {
+	/*
+	 * public Hand EvaluateHand() {
+	 * 
+	 * Hand h = null;
+	 * 
+	 * ArrayList<Hand> ExplodedHands = ExplodeHands(this);
+	 * 
+	 * for (Hand hand : ExplodedHands) { hand = Hand.EvaluateHand(hand); }
+	 * 
+	 * // Figure out best hand Collections.sort(ExplodedHands, Hand.HandRank);
+	 * 
+	 * // Return best hand. // TODO: Fix... what to do if there is a tie? return
+	 * ExplodedHands.get(0); }
+	 * 
+	 * 
+	 */
 
-		Hand h = null;
+	// TODO: one hand is passed in, 1, 52, 2704, etc are passed back
+	// No jokers, 'ReturnHands' should have one hand
+	// One Wild/joker 'ReturnHands' should have 52 hands, etc
 
-		ArrayList<Hand> ExplodedHands = ExplodeHands(this);
-
-		for (Hand hand : ExplodedHands) {
-			hand = Hand.EvaluateHand(hand);
-		}
-
-		//	Figure out best hand
-		Collections.sort(ExplodedHands, Hand.HandRank);
-		
-		//	Return best hand.  
-		//	TODO: Fix...  what to do if there is a tie?
-		return ExplodedHands.get(0);
-	}
-
-	
-	//TODO: one hand is passed in, 1, 52, 2704, etc are passed back
-	//		No jokers, 'ReturnHands' should have one hand
-	//		One Wild/joker 'ReturnHands' should have 52 hands, etc
-	
 	public static ArrayList<Hand> ExplodeHands(Hand h) {
 
+		ArrayList<Card> replacements = new ArrayList<Card>();
+		int iCardNbr = 0;
+		for (eSuit suit : eSuit.values()) {
+			for (eRank rank : eRank.values()) {
+				replacements.add(new Card(rank, suit, ++iCardNbr));
+			}
+		}
 		ArrayList<Hand> ReturnHands = new ArrayList<Hand>();
+		for (Card x : h.getCardsInHand()) {
+			if (x.isWilds() == true) {
+				h.getCardsInHand().remove(x);
+				for (Card c : replacements) {
+					h.getCardsInHand().add(c);
+					ReturnHands.add(h);
+					h.getCardsInHand().remove(c);
+				}
+				h.getCardsInHand().add(x);
+			}
+		}
+		Hand hand = h;
+		int WildCount = 0;
+		for (Card card : hand.getCardsInHand()){
+			if (card.geteRank() == eRank.JOKER)
+				WildCount++;
+		}
+		
+		//Using the wildcard count to add to all possible decks
+		if (WildCount == 1){
+			Deck deck = new Deck();
+			for(Card card : deck.getDeckCards()){
+				Hand samplehand = new Hand();
+				samplehand.AddCardToHand(card);
+				samplehand.AddCardToHand(h.getCardsInHand().get(1));
+				samplehand.AddCardToHand(h.getCardsInHand().get(2));
+				samplehand.AddCardToHand(h.getCardsInHand().get(3));
+				samplehand.AddCardToHand(h.getCardsInHand().get(4));
+				ReturnHands.add(samplehand);
+				}
+			}
+		if (WildCount == 2){
+			Deck deck = new Deck();
+			Deck seconddeck = new Deck();
+			for(Card card : deck.getDeckCards()){
+				for (Card othercard : seconddeck.getDeckCards()){
+				Hand samplehand = new Hand();
+				samplehand.AddCardToHand(card);
+				samplehand.AddCardToHand(h.getCardsInHand().get(1));
+				samplehand.AddCardToHand(h.getCardsInHand().get(2));
+				samplehand.AddCardToHand(h.getCardsInHand().get(3));
+				samplehand.AddCardToHand(h.getCardsInHand().get(4));
+				ReturnHands.add(samplehand);
+				}
+			}
+		}
+		
+		ReturnHands.add(h);
 		return ReturnHands;
+	}
+
+	public Hand TopHand(ArrayList<Hand> Hand) throws exHand { //Had to make the return method type Hand per Eclipse reccomendation
+		 Collections.sort(Hand,HandRank); //Sorting the hands by their rank
+		 if (Hand.get(0) == Hand.get(1))
+		 { 
+			 throw new exHand("There are multiple top hands!"); 
+		 } 
+		 else{
+			 return Hand.get(0); 
+		 }
+	}
+
+	public Hand EvaluateHand() throws exHand{ //MUST MAKE THIS PUBLIC TO BE USED IN JUNIT
+		ArrayList<Hand> ExplodedHands = ExplodeHands(this);
+		for (Hand hand : ExplodedHands){
+			hand = Hand.EvaluateHand(hand);
+		}
+		if (this.getCardsInHand().size() !=5){ //References prior method!
+			throw new exHand("The hand is not a valid number!");
+		}
+		return TopHand(ExplodedHands); //Evaluates hand, returns the best one
 	}
 
 	private static Hand EvaluateHand(Hand h) {
@@ -196,6 +271,28 @@ public class Hand {
 		}
 
 		return isHandRoyalFlush;
+	}
+
+	public static boolean isHandFiveOfAKind(Hand h, HandScore hs) {
+		boolean isHandFiveOfAKind = false;
+		ArrayList<Card> kickers = new ArrayList<Card>();
+		if (h.getCardsInHand().get(eCardNo.FirstCard.getCardNo()).geteRank() == h.getCardsInHand()
+				.get(eCardNo.FifthCard.getCardNo()).geteRank()) {
+
+			// Shouldn't be wild dependent technically, just if the first and
+			// fifth are the same...
+
+			isHandFiveOfAKind = true;
+			hs.setHiHand(h.getCardsInHand().get(eCardNo.FifthCard.getCardNo()).geteRank());
+		}
+
+		if (isHandFiveOfAKind) {
+			hs.setHandStrength(eHandStrength.FiveOfAKind);
+			hs.setLoHand(null);
+			hs.setKickers(kickers);
+		}
+
+		return isHandFiveOfAKind;
 	}
 
 	public static boolean isHandStraightFlush(Hand h, HandScore hs) {
